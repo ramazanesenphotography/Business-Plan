@@ -1,4 +1,4 @@
-import UserActionButtons from './UserActionButtons';
+import { useState } from 'react';
 import { formatDateForDisplay } from '../../utils/dateUtils';
 
 function formatDate(value) {
@@ -14,7 +14,9 @@ function formatDateTime(value) {
   }
 }
 
-export default function UsersTable({ users, loading, onApprove, onSuspend, onReactivate, onOpenDetails }) {
+export default function UsersTable({ users, loading, onApplyAction, onOpenDetails }) {
+  const [actionSelection, setActionSelection] = useState({});
+
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -49,13 +51,22 @@ export default function UsersTable({ users, loading, onApprove, onSuspend, onRea
               <td>{formatDate(user.subscription_end)}</td>
               <td>{formatDateTime(user.created_at)}</td>
               <td>
-                <UserActionButtons
-                  user={user}
-                  loading={loading}
-                  onApprove={() => onApprove(user)}
-                  onSuspend={() => onSuspend(user)}
-                  onReactivate={() => onReactivate(user)}
-                />
+                <div className="admin-actions-row">
+                  <select
+                    value={actionSelection[user.id] || ''}
+                    onChange={(event) => setActionSelection((current) => ({ ...current, [user.id]: event.target.value }))}
+                    style={{ minWidth: 120 }}
+                  >
+                    <option value="">Select action</option>
+                    <option value="trial">Trial</option>
+                    <option value="starter">Starter</option>
+                    <option value="pro">Pro</option>
+                    <option value="extend">Extend</option>
+                    <option value="expire">Expire</option>
+                  </select>
+                  <button type="button" className="admin-action-btn" disabled={loading || !actionSelection[user.id]} onClick={() => onApplyAction?.(user, actionSelection[user.id])}>Apply</button>
+                  <button type="button" className="admin-action-btn approve" onClick={() => onOpenDetails?.(user)}>Edit</button>
+                </div>
               </td>
             </tr>
           ))}

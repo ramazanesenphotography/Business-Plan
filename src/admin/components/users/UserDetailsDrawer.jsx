@@ -1,4 +1,4 @@
-import { formatDateForDisplay, toInputDateValue } from '../../utils/dateUtils';
+import { formatDateForDisplay, getSubscriptionPlanDates, toInputDateValue } from '../../utils/dateUtils';
 
 function formatDateValue(value) {
   return formatDateForDisplay(value);
@@ -35,7 +35,9 @@ export default function UserDetailsDrawer({ user, onClose, onSave, saving, form,
             <select value={form.role || ''} onChange={(event) => onChange('role', event.target.value)}>
               <option value="admin">admin</option>
               <option value="photographer">photographer</option>
-              <option value="employee">employee</option>
+              <option value="teacher">teacher</option>
+              <option value="creator">creator</option>
+              <option value="agency">agency</option>
             </select>
           </label>
           <label>
@@ -51,21 +53,32 @@ export default function UserDetailsDrawer({ user, onClose, onSave, saving, form,
             Workspace
             <select value={form.selected_workspace || ''} onChange={(event) => onChange('selected_workspace', event.target.value)}>
               <option value="">Clear</option>
-              <option value="photographer">photographer</option>
-              <option value="studio">studio</option>
-              <option value="agency">agency</option>
               <option value="admin">admin</option>
+              <option value="photographer">photographer</option>
+              <option value="teacher">teacher</option>
+              <option value="creator">creator</option>
+              <option value="agency">agency</option>
             </select>
           </label>
           <label>
             Subscription plan
-            <select value={form.subscription_plan || ''} onChange={(event) => onChange('subscription_plan', event.target.value)}>
+            <select
+              value={form.subscription_plan || ''}
+              onChange={(event) => {
+                const nextPlan = event.target.value;
+                const nextDates = nextPlan
+                  ? getSubscriptionPlanDates(nextPlan, new Date())
+                  : { subscription_start: '', subscription_end: '' };
+
+                onChange('subscription_plan', nextPlan);
+                onChange('subscription_start', nextDates.subscription_start);
+                onChange('subscription_end', nextDates.subscription_end);
+              }}
+            >
               <option value="">None</option>
-              <option value="trial">trial</option>
-              <option value="starter">starter</option>
-              <option value="pro">pro</option>
-              <option value="studio">studio</option>
-              <option value="enterprise">enterprise</option>
+              <option value="trial">Trial</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
             </select>
           </label>
           <label>

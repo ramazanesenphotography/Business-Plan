@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import useAdminUserActions from '../hooks/useAdminUserActions';
 import useAdminUserProfile from '../hooks/useAdminUserProfile';
 import { fetchAdminUsers } from '../services/adminUsersService';
 import UserDetailsDrawer from './users/UserDetailsDrawer';
@@ -8,7 +7,7 @@ import UserSearch from './users/UserSearch';
 import UserStatsCards from './users/UserStatsCards';
 import UserToast from './users/UserToast';
 import UsersTable from './users/UsersTable';
-import { toSupabaseDateValue } from '../utils/dateUtils';
+import { getSubscriptionPlanDates, toSupabaseDateValue } from '../utils/dateUtils';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
@@ -33,7 +32,6 @@ export default function AdminUsersPage() {
     setUsers(data || []);
   }, []);
 
-  const { busyAction, toast, setToast, runAction } = useAdminUserActions({ onRefresh: loadUsers });
   const { editingUser, setEditingUser, saving, toast: profileToast, saveUser } = useAdminUserProfile({ onRefresh: loadUsers });
 
   useEffect(() => {
@@ -82,13 +80,56 @@ export default function AdminUsersPage() {
     setDrawerForm((current) => ({ ...current, [key]: value }));
   }
 
+  async function handleApplyAction(user, action) {
+    if (!user?.id || !action) return;
+
+    const basePatch = {
+      subscription_plan: user.subscription_plan || 'trial',
+      subscription_start: user.subscription_start || null,
+      subscription_end: user.subscription_end || null
+    };
+
+    let patch = basePatch;
+
+    if (action === 'trial') {
+      patch = { ...basePatch, subscription_plan: 'trial', ...getSubscriptionPlanDates('trial', new Date()) };
+    } else if (action === 'starter') {
+      patch = { ...basePatch, subscription_plan: 'starter', ...getSubscriptionPlanDates('starter', new Date()) };
+    } else if (action === 'pro') {
+      patch = { ...basePatch, subscription_plan: 'pro', ...getSubscriptionPlanDates('pro', new Date()) };
+    } else if (action === 'extend') {
+      const currentEnd = user.subscription_end ? new Date(user.subscription_end) : new Date();
+      currentEnd.setMonth(currentEnd.getMonth() + 1);
+      patch = {
+        ...basePatch,
+        subscription_plan: user.subscription_plan || 'trial',
+        subscription_end: toSupabaseDateValue(currentEnd)
+      };
+    } else if (action === 'expire') {
+      patch = {
+        ...basePatch,
+        subscription_plan: user.subscription_plan || 'trial',
+        subscription_end: toSupabaseDateValue(new Date())
+      };
+    }
+
+    await saveUser(user.id, patch);
+    await loadUsers();
+  }
+
   async function handleSaveUser() {
     if (!selectedUser?.id) return;
 
+    const planChanged = drawerForm.subscription_plan !== selectedUser?.subscription_plan;
+    const planDates = planChanged && drawerForm.subscription_plan
+      ? getSubscriptionPlanDates(drawerForm.subscription_plan, new Date())
+      : {};
+
     const updates = {
       ...drawerForm,
-      subscription_start: toSupabaseDateValue(drawerForm.subscription_start),
-      subscription_end: toSupabaseDateValue(drawerForm.subscription_end)
+      ...planDates,
+      subscription_start: toSupabaseDateValue(planDates.subscription_start || drawerForm.subscription_start),
+      subscription_end: toSupabaseDateValue(planDates.subscription_end || drawerForm.subscription_end)
     };
 
     const { error } = await saveUser(selectedUser.id, updates);
@@ -124,10 +165,8 @@ export default function AdminUsersPage() {
         {!loading && !error && filteredUsers.length > 0 && (
           <UsersTable
             users={filteredUsers}
-            loading={busyAction}
-            onApprove={(user) => runAction(user, 'approve')}
-            onSuspend={(user) => runAction(user, 'suspend')}
-            onReactivate={(user) => runAction(user, 'reactivate')}
+            loading={loading}
+            onApplyAction={handleApplyAction}
             onOpenDetails={openUserDetails}
           />
         )}

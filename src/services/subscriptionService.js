@@ -1,4 +1,4 @@
-const ACTIVE_PLANS = new Set(['starter', 'pro', 'studio', 'enterprise', 'lifetime', '1 year', '1 Year', 'lifetime']);
+const ACTIVE_PLANS = new Set(['trial', 'starter', 'pro']);
 
 function normalizePlan(plan) {
   return String(plan || '').trim().toLowerCase();

@@ -31,6 +31,42 @@ export function toInputDateValue(value) {
   return `${year}-${month}-${day}`;
 }
 
+export function getSubscriptionPlanDates(plan, baseDate = new Date()) {
+  if (!plan) {
+    return {
+      subscription_start: '',
+      subscription_end: ''
+    };
+  }
+
+  const start = new Date(baseDate || new Date());
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+
+  switch (plan) {
+    case 'trial':
+      end.setDate(end.getDate() + 14);
+      break;
+    case 'starter':
+      end.setMonth(end.getMonth() + 3);
+      break;
+    case 'pro':
+      end.setFullYear(end.getFullYear() + 1);
+      break;
+    default:
+      return {
+        subscription_start: '',
+        subscription_end: ''
+      };
+  }
+
+  return {
+    subscription_start: toSupabaseDateValue(start),
+    subscription_end: toSupabaseDateValue(end)
+  };
+}
+
 export function toSupabaseDateValue(value) {
   if (!value) return null;
 

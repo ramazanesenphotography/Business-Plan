@@ -4,9 +4,9 @@ import { fetchAdminUsers } from '../services/adminUsersService';
 import UserDetailsDrawer from '../components/users/UserDetailsDrawer';
 import UserSearch from '../components/users/UserSearch';
 import UserToast from '../components/users/UserToast';
-import { formatDateForDisplay, toSupabaseDateValue } from '../utils/dateUtils';
+import { formatDateForDisplay, getSubscriptionPlanDates, toSupabaseDateValue } from '../utils/dateUtils';
 
-const PLAN_OPTIONS = ['trial', 'starter', 'pro', 'studio', 'enterprise'];
+const PLAN_OPTIONS = ['trial', 'starter', 'pro'];
 
 function formatDateValue(value) {
   return formatDateForDisplay(value);
@@ -83,7 +83,8 @@ export default function SubscriptionsPage() {
     active: users.filter((user) => getStatus(user) === 'active').length,
     expired: users.filter((user) => getStatus(user) === 'expired').length,
     trial: users.filter((user) => (user.subscription_plan || 'trial') === 'trial').length,
-    enterprise: users.filter((user) => (user.subscription_plan || 'trial') === 'enterprise').length
+    starter: users.filter((user) => (user.subscription_plan || 'trial') === 'starter').length,
+    pro: users.filter((user) => (user.subscription_plan || 'trial') === 'pro').length
   }), [users]);
 
   async function updateSubscription(user, patch) {
@@ -94,12 +95,10 @@ export default function SubscriptionsPage() {
   }
 
   async function assignPlan(user, plan) {
-    const start = new Date();
-    const end = plan === 'enterprise' ? addMonths(start, 12) : addMonths(start, 1);
+    const planDates = getSubscriptionPlanDates(plan);
     await updateSubscription(user, {
       subscription_plan: plan,
-      subscription_start: toSupabaseDateValue(start.toISOString()),
-      subscription_end: toSupabaseDateValue(end.toISOString())
+      ...planDates
     });
   }
 
@@ -126,10 +125,16 @@ export default function SubscriptionsPage() {
   async function handleSaveUser() {
     if (!selectedUser?.id) return;
 
+    const planChanged = drawerForm.subscription_plan !== selectedUser?.subscription_plan;
+    const planDates = planChanged && drawerForm.subscription_plan
+      ? getSubscriptionPlanDates(drawerForm.subscription_plan, new Date())
+      : {};
+
     const updates = {
       ...drawerForm,
-      subscription_start: toSupabaseDateValue(drawerForm.subscription_start),
-      subscription_end: toSupabaseDateValue(drawerForm.subscription_end)
+      ...planDates,
+      subscription_start: toSupabaseDateValue(planDates.subscription_start || drawerForm.subscription_start),
+      subscription_end: toSupabaseDateValue(planDates.subscription_end || drawerForm.subscription_end)
     };
 
     const { error } = await saveUser(selectedUser.id, updates);
@@ -152,7 +157,7 @@ export default function SubscriptionsPage() {
         <div className="admin-summary-card"><span>Total users</span><strong>{summary.total}</strong></div>
         <div className="admin-summary-card"><span>Active</span><strong>{summary.active}</strong></div>
         <div className="admin-summary-card"><span>Expired</span><strong>{summary.expired}</strong></div>
-        <div className="admin-summary-card"><span>Trial / Enterprise</span><strong>{summary.trial} / {summary.enterprise}</strong></div>
+        <div className="admin-summary-card"><span>Trial / Starter / Pro</span><strong>{summary.trial} / {summary.starter} / {summary.pro}</strong></div>
       </div>
 
       <div className="admin-filter-row">

@@ -5,7 +5,7 @@ import Brand from '../shared/Brand';
 import { signUp } from '../services/authService';
 
 export default function RegisterPage({ onSession, onVerificationSent }) {
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '', profileType: 'photographer' });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function RegisterPage({ onSession, onVerificationSent }) {
     }
 
     setBusy(true);
-    const { data, error } = await signUp(form.email, form.password, form.fullName);
+    const { data, error } = await signUp(form.email, form.password, form.fullName, form.profileType);
     setBusy(false);
 
     if (error) {
@@ -59,6 +59,16 @@ export default function RegisterPage({ onSession, onVerificationSent }) {
           <label>
             Email
             <input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="name@example.com" />
+          </label>
+
+          <label>
+            Profile type
+            <select value={form.profileType} onChange={(event) => setForm({ ...form, profileType: event.target.value })}>
+              <option value="photographer">Photographer</option>
+              <option value="teacher">Teacher</option>
+              <option value="creator">Creator</option>
+              <option value="agency">Agency</option>
+            </select>
           </label>
 
           <label>

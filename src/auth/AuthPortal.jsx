@@ -28,6 +28,18 @@ const WORKSPACES = [
     title: 'Teacher',
     description: 'Students, lessons, attendance, payments and files.',
     icon: '🎓'
+  },
+  {
+    key: 'creator',
+    title: 'Creator',
+    description: 'A future-ready workspace for content and brand operations.',
+    icon: '✨'
+  },
+  {
+    key: 'agency',
+    title: 'Agency',
+    description: 'A future-ready workspace for multi-client delivery.',
+    icon: '🏢'
   }
 ];
 
@@ -111,6 +123,38 @@ function TeacherWorkspace({ profile, onSignOut }) {
   return (
     <Shell>
       <TeacherApp profile={profile} onSignOut={onSignOut} />
+    </Shell>
+  );
+}
+
+function CreatorWorkspace({ profile, onSignOut }) {
+  return (
+    <Shell>
+      <div className="auth-center">
+        <div className="auth-card auth-message-card">
+          <Brand />
+          <div className="auth-message-icon">✨</div>
+          <h1>Creator workspace</h1>
+          <p>This workspace is prepared for future creator operations. The core photographer and teacher experiences remain available in their existing modules.</p>
+          <button className="auth-primary" onClick={onSignOut}>Sign Out</button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function AgencyWorkspace({ profile, onSignOut }) {
+  return (
+    <Shell>
+      <div className="auth-center">
+        <div className="auth-card auth-message-card">
+          <Brand />
+          <div className="auth-message-icon">🏢</div>
+          <h1>Agency workspace</h1>
+          <p>This workspace is prepared for future agency operations. Existing admin, photographer, and teacher workspaces continue to work as before.</p>
+          <button className="auth-primary" onClick={onSignOut}>Sign Out</button>
+        </div>
+      </div>
     </Shell>
   );
 }
@@ -478,8 +522,16 @@ export default function AuthPortal() {
       return <WorkspaceSelection profile={profile} onSelected={setProfile} />;
     }
 
-    if (profile.selected_workspace === 'teacher') {
+    if (profile.selected_workspace === 'teacher' || profile.role === 'teacher') {
       return <TeacherWorkspace profile={profile} onSignOut={handleSignOut} />;
+    }
+
+    if (profile.selected_workspace === 'creator' || profile.role === 'creator') {
+      return <CreatorWorkspace profile={profile} onSignOut={handleSignOut} />;
+    }
+
+    if (profile.selected_workspace === 'agency' || profile.role === 'agency') {
+      return <AgencyWorkspace profile={profile} onSignOut={handleSignOut} />;
     }
 
     return <PhotographerWorkspace onSignOut={handleSignOut} profile={profile} />;
