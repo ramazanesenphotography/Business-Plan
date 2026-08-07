@@ -1,10 +1,7 @@
+import { formatDateForDisplay, toInputDateValue } from '../../utils/dateUtils';
+
 function formatDateValue(value) {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleString('en-GB');
-  } catch {
-    return '—';
-  }
+  return formatDateForDisplay(value);
 }
 
 export default function UserDetailsDrawer({ user, onClose, onSave, saving, form, onChange, error, success }) {
@@ -73,11 +70,11 @@ export default function UserDetailsDrawer({ user, onClose, onSave, saving, form,
           </label>
           <label>
             Subscription start
-            <input type="date" value={form.subscription_start ? form.subscription_start.slice(0, 10) : ''} onChange={(event) => onChange('subscription_start', event.target.value)} />
+            <input type="date" value={toInputDateValue(form.subscription_start)} onChange={(event) => onChange('subscription_start', event.target.value)} />
           </label>
           <label>
             Subscription end
-            <input type="date" value={form.subscription_end ? form.subscription_end.slice(0, 10) : ''} onChange={(event) => onChange('subscription_end', event.target.value)} />
+            <input type="date" value={toInputDateValue(form.subscription_end)} onChange={(event) => onChange('subscription_end', event.target.value)} />
           </label>
         </div>
 

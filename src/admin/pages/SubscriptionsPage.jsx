@@ -4,16 +4,12 @@ import { fetchAdminUsers } from '../services/adminUsersService';
 import UserDetailsDrawer from '../components/users/UserDetailsDrawer';
 import UserSearch from '../components/users/UserSearch';
 import UserToast from '../components/users/UserToast';
+import { formatDateForDisplay, toSupabaseDateValue } from '../utils/dateUtils';
 
 const PLAN_OPTIONS = ['trial', 'starter', 'pro', 'studio', 'enterprise'];
 
 function formatDateValue(value) {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleDateString('en-GB');
-  } catch {
-    return '—';
-  }
+  return formatDateForDisplay(value);
 }
 
 function addMonths(date, months) {
@@ -102,8 +98,8 @@ export default function SubscriptionsPage() {
     const end = plan === 'enterprise' ? addMonths(start, 12) : addMonths(start, 1);
     await updateSubscription(user, {
       subscription_plan: plan,
-      subscription_start: start.toISOString(),
-      subscription_end: end.toISOString()
+      subscription_start: toSupabaseDateValue(start.toISOString()),
+      subscription_end: toSupabaseDateValue(end.toISOString())
     });
   }
 
@@ -112,14 +108,14 @@ export default function SubscriptionsPage() {
     const nextEnd = addMonths(currentEnd, months);
     await updateSubscription(user, {
       subscription_plan: user.subscription_plan || 'trial',
-      subscription_end: nextEnd.toISOString()
+      subscription_end: toSupabaseDateValue(nextEnd.toISOString())
     });
   }
 
   async function expireSubscription(user) {
     await updateSubscription(user, {
       subscription_plan: user.subscription_plan || 'trial',
-      subscription_end: new Date().toISOString()
+      subscription_end: toSupabaseDateValue(new Date().toISOString())
     });
   }
 
@@ -132,8 +128,8 @@ export default function SubscriptionsPage() {
 
     const updates = {
       ...drawerForm,
-      subscription_start: drawerForm.subscription_start ? new Date(drawerForm.subscription_start).toISOString() : null,
-      subscription_end: drawerForm.subscription_end ? new Date(drawerForm.subscription_end).toISOString() : null
+      subscription_start: toSupabaseDateValue(drawerForm.subscription_start),
+      subscription_end: toSupabaseDateValue(drawerForm.subscription_end)
     };
 
     const { error } = await saveUser(selectedUser.id, updates);

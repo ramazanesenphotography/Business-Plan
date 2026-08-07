@@ -8,6 +8,7 @@ import UserSearch from './users/UserSearch';
 import UserStatsCards from './users/UserStatsCards';
 import UserToast from './users/UserToast';
 import UsersTable from './users/UsersTable';
+import { toSupabaseDateValue } from '../utils/dateUtils';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
@@ -86,8 +87,8 @@ export default function AdminUsersPage() {
 
     const updates = {
       ...drawerForm,
-      subscription_start: drawerForm.subscription_start ? new Date(drawerForm.subscription_start).toISOString() : null,
-      subscription_end: drawerForm.subscription_end ? new Date(drawerForm.subscription_end).toISOString() : null
+      subscription_start: toSupabaseDateValue(drawerForm.subscription_start),
+      subscription_end: toSupabaseDateValue(drawerForm.subscription_end)
     };
 
     const { error } = await saveUser(selectedUser.id, updates);

@@ -1,12 +1,8 @@
 import UserActionButtons from './UserActionButtons';
+import { formatDateForDisplay } from '../../utils/dateUtils';
 
 function formatDate(value) {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleDateString('en-GB');
-  } catch {
-    return '—';
-  }
+  return formatDateForDisplay(value);
 }
 
 function formatDateTime(value) {
