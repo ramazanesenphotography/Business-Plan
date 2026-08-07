@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getSession, onAuthStateChange, signOut as signOutService } from '../services/authService';
 import { supabase } from '../../supabaseClient';
 
@@ -8,7 +8,7 @@ export default function useAuthSession() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [passwordRecovery, setPasswordRecovery] = useState(false);
-  const [localDirectAccess, setLocalDirectAccess] = useState(() => localStorage.getItem('businessplan_local_direct_access') === 'true');
+  const listenerRef = useRef(null);
 
   const loadProfile = useCallback(async (userId) => {
     if (!userId) {
@@ -32,34 +32,60 @@ export default function useAuthSession() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     getSession().then(({ data }) => {
-      setSession(data.session || null);
-      if (data.session?.user?.id) loadProfile(data.session.user.id);
-    });
-
-    const { data: listener } = onAuthStateChange((event, nextSession) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setPasswordRecovery(true);
-      }
-
-      setSession(nextSession || null);
-
-      if (nextSession?.user?.id && event !== 'PASSWORD_RECOVERY') {
-        setTimeout(() => loadProfile(nextSession.user.id), 0);
-      } else if (!nextSession) {
-        setProfile(null);
+      if (!isMounted) return;
+      const nextSession = data.session || null;
+      setSession(nextSession);
+      if (nextSession?.user?.id) {
+        loadProfile(nextSession.user.id);
       }
     });
 
-    return () => listener.subscription.unsubscribe();
+    if (!listenerRef.current) {
+      const { data: listener } = onAuthStateChange((event, nextSession) => {
+        if (!isMounted) return;
+
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecovery(true);
+        } else {
+          setPasswordRecovery(false);
+        }
+
+        setSession(nextSession || null);
+
+        if (nextSession?.user?.id && event !== 'PASSWORD_RECOVERY') {
+          loadProfile(nextSession.user.id);
+        } else if (!nextSession) {
+          setProfile(null);
+          setProfileError('');
+        }
+      });
+
+      listenerRef.current = listener.subscription;
+    }
+
+    return () => {
+      isMounted = false;
+      if (listenerRef.current) {
+        listenerRef.current.unsubscribe();
+        listenerRef.current = null;
+      }
+    };
   }, [loadProfile]);
 
   const signOut = useCallback(async () => {
-    localStorage.removeItem('businessplan_local_direct_access');
-    setLocalDirectAccess(false);
-    await signOutService();
-    setSession(null);
-    setProfile(null);
+    try {
+      await signOutService();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setSession(null);
+      setProfile(null);
+      setProfileError('');
+      setPasswordRecovery(false);
+    }
   }, []);
 
   const expired = useMemo(() => {
@@ -73,8 +99,6 @@ export default function useAuthSession() {
     profileLoading,
     profileError,
     passwordRecovery,
-    localDirectAccess,
-    setLocalDirectAccess,
     loadProfile,
     signOut,
     expired,

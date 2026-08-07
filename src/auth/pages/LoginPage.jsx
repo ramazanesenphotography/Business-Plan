@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout';
 import Brand from '../shared/Brand';
-import { signInWithPassword, setLocalDirectAccess } from '../services/authService';
+import { signInWithPassword } from '../services/authService';
 
-export default function LoginPage({ onSession, onLocalDirectAccess }) {
+export default function LoginPage({ onSession }) {
   const [form, setForm] = useState({ email: '', password: '' });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -14,25 +14,36 @@ export default function LoginPage({ onSession, onLocalDirectAccess }) {
     event.preventDefault();
     setMessage('');
 
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const email = form.email.trim();
+    const password = form.password;
 
-    if (isLocalhost && form.email.trim().toLowerCase() === 'ramazanesen23@gmail.com' && form.password === 'Rms3354lv') {
-      setLocalDirectAccess(true);
-      onLocalDirectAccess();
+    if (!email || !password) {
+      setMessage('Please enter your email and password.');
       return;
     }
 
     setBusy(true);
-    const { data, error } = await signInWithPassword(form.email, form.password);
-    setBusy(false);
 
-    if (error) {
-      setMessage(error.message);
-      return;
+    try {
+      const { data, error } = await signInWithPassword(email, password);
+
+      if (error) {
+        setMessage(error.message || 'Unable to sign in.');
+        return;
+      }
+
+      if (!data?.session) {
+        setMessage('Sign in succeeded, but no session was returned.');
+        return;
+      }
+
+      onSession(data.session);
+      navigate('/');
+    } catch (error) {
+      setMessage(error?.message || String(error));
+    } finally {
+      setBusy(false);
     }
-
-    onSession(data.session);
-    navigate('/');
   }
 
   return (
@@ -61,7 +72,7 @@ export default function LoginPage({ onSession, onLocalDirectAccess }) {
 
           {message && <div className="auth-alert">{message}</div>}
 
-          <button className="auth-primary" disabled={busy}>
+          <button type="submit" className="auth-primary" disabled={busy}>
             {busy ? 'Please wait...' : 'Sign In'}
           </button>
 

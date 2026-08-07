@@ -23,18 +23,6 @@ export async function updatePassword(password) {
   return supabase.auth.updateUser({ password });
 }
 
-export function getLocalDirectAccess() {
-  return localStorage.getItem('businessplan_local_direct_access') === 'true';
-}
-
-export function setLocalDirectAccess(value) {
-  if (value) {
-    localStorage.setItem('businessplan_local_direct_access', 'true');
-  } else {
-    localStorage.removeItem('businessplan_local_direct_access');
-  }
-}
-
 export function getSession() {
   return supabase.auth.getSession();
 }

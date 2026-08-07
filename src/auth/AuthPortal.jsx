@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import PhotographerApp from '../PhotographerApp';
@@ -461,8 +461,6 @@ export default function AuthPortal() {
     profileLoading,
     profileError,
     passwordRecovery,
-    localDirectAccess,
-    setLocalDirectAccess,
     loadProfile,
     signOut,
     expired,
@@ -489,11 +487,12 @@ export default function AuthPortal() {
     selected_workspace: null
   };
 
-  const authenticatedView = () => {
-    if (localDirectAccess) {
-      return <AdminDashboard profile={localAdminProfile} onSignOut={signOut} />;
-    }
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
+  const authenticatedView = () => {
     if (passwordRecovery) {
       return (
         <ResetPasswordScreen
@@ -525,7 +524,7 @@ export default function AuthPortal() {
           title="Profile could not be loaded"
           text={profileError}
           action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Try Again</button>}
-          secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
+          secondaryAction={<button className="auth-link-button" onClick={handleSignOut}>Sign Out</button>}
         />
       );
     }
@@ -536,13 +535,13 @@ export default function AuthPortal() {
           title="Preparing your account"
           text="Your profile record is not ready yet. Try again in a moment."
           action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Refresh</button>}
-          secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
+          secondaryAction={<button className="auth-link-button" onClick={handleSignOut}>Sign Out</button>}
         />
       );
     }
 
     if (profile.role === 'admin') {
-      return <AdminDashboard profile={profile} onSignOut={signOut} />;
+      return <AdminDashboard profile={profile} onSignOut={handleSignOut} />;
     }
 
     if (profile.approval_status === 'pending') {
@@ -551,7 +550,7 @@ export default function AuthPortal() {
           title="Waiting for administrator approval"
           text="Your email is verified. Your account is now waiting for an administrator to assign access and a subscription."
           action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Check Again</button>}
-          secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
+          secondaryAction={<button className="auth-link-button" onClick={handleSignOut}>Sign Out</button>}
         />
       );
     }
@@ -561,7 +560,7 @@ export default function AuthPortal() {
         <FullScreenMessage
           title={profile.approval_status === 'suspended' ? 'Account suspended' : 'Account not approved'}
           text="Contact the system administrator for more information."
-          action={<button className="auth-primary" onClick={signOut}>Return to Sign In</button>}
+          action={<button className="auth-primary" onClick={handleSignOut}>Return to Sign In</button>}
         />
       );
     }
@@ -571,7 +570,7 @@ export default function AuthPortal() {
         <FullScreenMessage
           title="Subscription expired"
           text={`Your access ended on ${new Date(profile.subscription_end).toLocaleDateString('en-GB')}. Contact the administrator to renew it.`}
-          action={<button className="auth-primary" onClick={signOut}>Sign Out</button>}
+          action={<button className="auth-primary" onClick={handleSignOut}>Sign Out</button>}
         />
       );
     }
@@ -581,15 +580,15 @@ export default function AuthPortal() {
     }
 
     if (profile.selected_workspace === 'teacher') {
-      return <TeacherWorkspace profile={profile} onSignOut={signOut} />;
+      return <TeacherWorkspace profile={profile} onSignOut={handleSignOut} />;
     }
 
-    return <PhotographerWorkspace onSignOut={signOut} />;
+    return <PhotographerWorkspace onSignOut={handleSignOut} />;
   };
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage onSession={handleSession} onLocalDirectAccess={() => setLocalDirectAccess(true)} />} />
+      <Route path="/login" element={<LoginPage onSession={handleSession} />} />
       <Route path="/register" element={<RegisterPage onSession={handleSession} onVerificationSent={setVerificationEmail} />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/waiting-approval" element={<WaitingApprovalPage email={verificationEmail || 'your email'} />} />

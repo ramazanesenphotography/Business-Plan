@@ -265,6 +265,112 @@
   font-size: 16px;
 }
 
+.admin-table-row {
+  cursor: pointer;
+}
+
+.admin-table-row:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.admin-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 2000;
+}
+
+.admin-drawer {
+  width: min(480px, 100%);
+  height: 100%;
+  background: #0d1726;
+  border-left: 1px solid #243349;
+  padding: 22px;
+  overflow-y: auto;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.35);
+}
+
+.admin-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-drawer-header h3 {
+  margin: 4px 0 0;
+  font-size: 24px;
+}
+
+.admin-drawer-close {
+  border: 0;
+  background: transparent;
+  color: #f8fafc;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.admin-drawer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-drawer-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #91a4be;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-drawer-grid input,
+.admin-drawer-grid select {
+  border: 1px solid #25364e;
+  background: #060d18;
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 10px 11px;
+  outline: none;
+}
+
+.admin-drawer-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.admin-drawer-meta > div {
+  background: #07101d;
+  border: 1px solid #243349;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.admin-drawer-meta span {
+  display: block;
+  color: #91a4be;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.admin-drawer-meta strong {
+  display: block;
+  font-size: 12px;
+}
+
+.admin-drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
 @media (max-width: 1000px) {
   .admin-app {
     grid-template-columns: 1fr;
@@ -291,6 +397,14 @@
   }
 
   .admin-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-drawer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-drawer-meta {
     grid-template-columns: 1fr;
   }
 }

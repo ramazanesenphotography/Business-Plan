@@ -1,9 +1,5 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = 'https://ovmuiosxbfdprgxdjlfp.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92bXVpb3N4YmZkcHJneGRqbGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODA3ODYsImV4cCI6MjEwMDY1Njc4Nn0.fw22a_T5f5QyL-qIOxFxOMwPZhIv9U5ANZs3WCWtU4Y';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from './supabaseClient';
 
 function formatDateTR(dateString) {
   if (!dateString) return { day: '----', month: '---', year: '----' };

@@ -18,7 +18,7 @@ function formatDateTime(value) {
   }
 }
 
-export default function UsersTable({ users, loading, onApprove, onSuspend, onReactivate }) {
+export default function UsersTable({ users, loading, onApprove, onSuspend, onReactivate, onOpenDetails }) {
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -38,7 +38,7 @@ export default function UsersTable({ users, loading, onApprove, onSuspend, onRea
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.id}>
+            <tr key={user.id} className="admin-table-row" onClick={() => onOpenDetails?.(user)}>
               <td>{user.full_name || '—'}</td>
               <td>{user.email || '—'}</td>
               <td>{user.role || '—'}</td>

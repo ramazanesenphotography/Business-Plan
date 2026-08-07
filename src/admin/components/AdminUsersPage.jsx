@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import useAdminUserActions from '../hooks/useAdminUserActions';
+import useAdminUserProfile from '../hooks/useAdminUserProfile';
 import { fetchAdminUsers } from '../services/adminUsersService';
+import UserDetailsDrawer from './users/UserDetailsDrawer';
 import UserFilters from './users/UserFilters';
 import UserSearch from './users/UserSearch';
 import UserStatsCards from './users/UserStatsCards';
@@ -13,6 +15,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [drawerForm, setDrawerForm] = useState({});
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -29,10 +33,26 @@ export default function AdminUsersPage() {
   }, []);
 
   const { busyAction, toast, setToast, runAction } = useAdminUserActions({ onRefresh: loadUsers });
+  const { editingUser, setEditingUser, saving, toast: profileToast, saveUser } = useAdminUserProfile({ onRefresh: loadUsers });
 
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      setDrawerForm({
+        full_name: selectedUser.full_name || '',
+        email: selectedUser.email || '',
+        role: selectedUser.role || 'photographer',
+        approval_status: selectedUser.approval_status || 'pending',
+        selected_workspace: selectedUser.selected_workspace || '',
+        subscription_plan: selectedUser.subscription_plan || '',
+        subscription_start: selectedUser.subscription_start || '',
+        subscription_end: selectedUser.subscription_end || ''
+      });
+    }
+  }, [selectedUser]);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -51,6 +71,31 @@ export default function AdminUsersPage() {
     approved: users.filter((user) => user.approval_status === 'approved').length,
     suspended: users.filter((user) => user.approval_status === 'suspended').length
   }), [users]);
+
+  function openUserDetails(user) {
+    setSelectedUser(user);
+    setEditingUser(user);
+  }
+
+  function updateDrawerField(key, value) {
+    setDrawerForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function handleSaveUser() {
+    if (!selectedUser?.id) return;
+
+    const updates = {
+      ...drawerForm,
+      subscription_start: drawerForm.subscription_start ? new Date(drawerForm.subscription_start).toISOString() : null,
+      subscription_end: drawerForm.subscription_end ? new Date(drawerForm.subscription_end).toISOString() : null
+    };
+
+    const { error } = await saveUser(selectedUser.id, updates);
+    if (!error) {
+      setSelectedUser(null);
+      setEditingUser(null);
+    }
+  }
 
   return (
     <div className="admin-page">
@@ -82,9 +127,26 @@ export default function AdminUsersPage() {
             onApprove={(user) => runAction(user, 'approve')}
             onSuspend={(user) => runAction(user, 'suspend')}
             onReactivate={(user) => runAction(user, 'reactivate')}
+            onOpenDetails={openUserDetails}
           />
         )}
       </div>
+
+      {selectedUser && (
+        <UserDetailsDrawer
+          user={selectedUser}
+          onClose={() => {
+            setSelectedUser(null);
+            setEditingUser(null);
+          }}
+          onSave={handleSaveUser}
+          saving={saving}
+          form={drawerForm}
+          onChange={updateDrawerField}
+          error={profileToast?.type === 'error' ? profileToast.message : ''}
+          success={profileToast?.type === 'success' ? profileToast.message : ''}
+        />
+      )}
     </div>
   );
 }
