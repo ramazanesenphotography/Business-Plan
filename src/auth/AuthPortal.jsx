@@ -1,6 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import PhotographerApp from '../PhotographerApp';
+import useAuthSession from './hooks/useAuthSession';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import WaitingApprovalPage from './pages/WaitingApprovalPage';
+import AuthShell from './shared/AuthShell';
+import Brand from './shared/Brand';
 
 const WORKSPACES = [
   {
@@ -19,22 +27,10 @@ const WORKSPACES = [
 
 function Shell({ children }) {
   return (
-    <div className="auth-shell">
+    <AuthShell>
       <style>{styles}</style>
       {children}
-    </div>
-  );
-}
-
-function Brand() {
-  return (
-    <div className="auth-brand">
-      <div className="auth-logo">▣</div>
-      <div>
-        <strong>BUSINESS PLAN</strong>
-        <span>Professional workspace management</span>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
 
@@ -50,225 +46,6 @@ function FullScreenMessage({ title, text, action, secondaryAction }) {
           {action}
           {secondaryAction}
         </div>
-      </div>
-    </Shell>
-  );
-}
-
-function LoginRegister({ onSession, onLocalDirectAccess }) {
-  const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
-  const [verificationSent, setVerificationSent] = useState(false);
-
-  async function submit(event) {
-    event.preventDefault();
-    setMessage('');
-
-    const isLocalhost =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1';
-
-    if (
-      mode === 'login' &&
-      isLocalhost &&
-      form.email.trim().toLowerCase() === 'ramazanesen23@gmail.com' &&
-      form.password === 'Rms3354lv'
-    ) {
-      localStorage.setItem('businessplan_local_direct_access', 'true');
-      onLocalDirectAccess();
-      return;
-    }
-
-    if (mode === 'register' && form.password !== form.confirmPassword) {
-      setMessage('Passwords do not match.');
-      return;
-    }
-
-    setBusy(true);
-
-    if (mode === 'register') {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email.trim(),
-        password: form.password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: { full_name: form.fullName.trim() }
-        }
-      });
-
-      setBusy(false);
-
-      if (error) {
-        setMessage(error.message);
-        return;
-      }
-
-      if (data.session) {
-        onSession(data.session);
-      } else {
-        setVerificationSent(true);
-      }
-
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: form.email.trim(),
-      password: form.password
-    });
-
-    setBusy(false);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    onSession(data.session);
-  }
-
-  async function resetPassword() {
-    if (!form.email.trim()) {
-      setMessage('Enter your email address first.');
-      return;
-    }
-
-    setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      form.email.trim(),
-      { redirectTo: window.location.origin }
-    );
-    setBusy(false);
-    setMessage(error ? error.message : 'Password reset email sent.');
-  }
-
-  if (verificationSent) {
-    return (
-      <FullScreenMessage
-        title="Check your email"
-        text={`We sent a verification link to ${form.email}. Open the email and confirm your address, then return here to sign in.`}
-        action={
-          <button className="auth-primary" onClick={() => {
-            setVerificationSent(false);
-            setMode('login');
-          }}>
-            Back to Sign In
-          </button>
-        }
-      />
-    );
-  }
-
-  return (
-    <Shell>
-      <div className="auth-layout">
-        <section className="auth-showcase">
-          <Brand />
-          <div className="auth-showcase-copy">
-            <span className="auth-kicker">ONE PLATFORM · MULTIPLE PROFESSIONS</span>
-            <h1>Run your business from one clean workspace.</h1>
-            <p>
-              Start with Photographer or Teacher. More professional workspaces
-              can be added later without changing the account system.
-            </p>
-          </div>
-          <div className="auth-mini-grid">
-            <div><b>📷</b><span>Photographer</span></div>
-            <div><b>🎓</b><span>Teacher</span></div>
-            <div className="auth-coming"><b>＋</b><span>More soon</span></div>
-          </div>
-        </section>
-
-        <section className="auth-form-side">
-          <form className="auth-card auth-form-card" onSubmit={submit}>
-            <div className="auth-mobile-brand"><Brand /></div>
-            <div className="auth-tabs">
-              <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => {
-                setMode('login');
-                setMessage('');
-              }}>Sign In</button>
-              <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => {
-                setMode('register');
-                setMessage('');
-              }}>Create Account</button>
-            </div>
-
-            <h2>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
-            <p className="auth-muted">
-              {mode === 'login'
-                ? 'Sign in to continue to your workspace.'
-                : 'Your email must be verified and your account approved by an administrator.'}
-            </p>
-
-            {mode === 'register' && (
-              <label>
-                Full name
-                <input
-                  required
-                  value={form.fullName}
-                  onChange={(event) => setForm({ ...form, fullName: event.target.value })}
-                  placeholder="Your full name"
-                />
-              </label>
-            )}
-
-            <label>
-              Email
-              <input
-                required
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-                placeholder="name@example.com"
-              />
-            </label>
-
-            <label>
-              Password
-              <input
-                required
-                minLength={6}
-                type="password"
-                value={form.password}
-                onChange={(event) => setForm({ ...form, password: event.target.value })}
-                placeholder="At least 6 characters"
-              />
-            </label>
-
-            {mode === 'register' && (
-              <label>
-                Confirm password
-                <input
-                  required
-                  minLength={6}
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
-                  placeholder="Repeat password"
-                />
-              </label>
-            )}
-
-            {message && <div className="auth-alert">{message}</div>}
-
-            <button className="auth-primary" disabled={busy}>
-              {busy ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-            </button>
-
-            {mode === 'login' && (
-              <button type="button" className="auth-link-button" onClick={resetPassword}>
-                Forgot password?
-              </button>
-            )}
-          </form>
-        </section>
       </div>
     </Shell>
   );
@@ -596,7 +373,6 @@ function PhotographerWorkspace({ onSignOut }) {
   );
 }
 
-
 function ResetPasswordScreen({ onDone }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -676,191 +452,148 @@ function ResetPasswordScreen({ onDone }) {
 }
 
 export default function AuthPortal() {
-  const [session, setSession] = useState(undefined);
-  const [profile, setProfile] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState('');
-  const [passwordRecovery, setPasswordRecovery] = useState(false);
-  const [localDirectAccess, setLocalDirectAccess] = useState(
-    () => localStorage.getItem('businessplan_local_direct_access') === 'true'
+  const {
+    session,
+    profile,
+    profileLoading,
+    profileError,
+    passwordRecovery,
+    localDirectAccess,
+    setLocalDirectAccess,
+    loadProfile,
+    signOut,
+    expired,
+    setProfile,
+    setSession
+  } = useAuthSession();
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const navigate = useNavigate();
+
+  const handleSession = (nextSession) => {
+    setSession(nextSession);
+    if (nextSession?.user?.id) {
+      loadProfile(nextSession.user.id);
+    }
+  };
+
+  const localAdminProfile = {
+    id: 'local-admin',
+    email: 'ramazanesen23@gmail.com',
+    full_name: 'Ramazan Esen',
+    role: 'admin',
+    approval_status: 'approved',
+    subscription_plan: 'Lifetime',
+    selected_workspace: null
+  };
+
+  const authenticatedView = () => {
+    if (localDirectAccess) {
+      return <AdminDashboard profile={localAdminProfile} onSignOut={signOut} />;
+    }
+
+    if (passwordRecovery) {
+      return (
+        <ResetPasswordScreen
+          onDone={async () => {
+            await supabase.auth.signOut();
+            setSession(null);
+            setProfile(null);
+            navigate('/login');
+          }}
+        />
+      );
+    }
+
+    if (session === undefined || (session && profileLoading && !profile)) {
+      return (
+        <Shell>
+          <div className="auth-center"><div className="auth-loader">Loading Business Plan...</div></div>
+        </Shell>
+      );
+    }
+
+    if (!session) {
+      return <Navigate to="/login" replace />;
+    }
+
+    if (profileError) {
+      return (
+        <FullScreenMessage
+          title="Profile could not be loaded"
+          text={profileError}
+          action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Try Again</button>}
+          secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
+        />
+      );
+    }
+
+    if (!profile) {
+      return (
+        <FullScreenMessage
+          title="Preparing your account"
+          text="Your profile record is not ready yet. Try again in a moment."
+          action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Refresh</button>}
+          secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
+        />
+      );
+    }
+
+    if (profile.role === 'admin') {
+      return <AdminDashboard profile={profile} onSignOut={signOut} />;
+    }
+
+    if (profile.approval_status === 'pending') {
+      return (
+        <FullScreenMessage
+          title="Waiting for administrator approval"
+          text="Your email is verified. Your account is now waiting for an administrator to assign access and a subscription."
+          action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Check Again</button>}
+          secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
+        />
+      );
+    }
+
+    if (profile.approval_status === 'rejected' || profile.approval_status === 'suspended') {
+      return (
+        <FullScreenMessage
+          title={profile.approval_status === 'suspended' ? 'Account suspended' : 'Account not approved'}
+          text="Contact the system administrator for more information."
+          action={<button className="auth-primary" onClick={signOut}>Return to Sign In</button>}
+        />
+      );
+    }
+
+    if (expired) {
+      return (
+        <FullScreenMessage
+          title="Subscription expired"
+          text={`Your access ended on ${new Date(profile.subscription_end).toLocaleDateString('en-GB')}. Contact the administrator to renew it.`}
+          action={<button className="auth-primary" onClick={signOut}>Sign Out</button>}
+        />
+      );
+    }
+
+    if (!profile.selected_workspace || !profile.onboarding_completed) {
+      return <WorkspaceSelection profile={profile} onSelected={setProfile} />;
+    }
+
+    if (profile.selected_workspace === 'teacher') {
+      return <TeacherWorkspace profile={profile} onSignOut={signOut} />;
+    }
+
+    return <PhotographerWorkspace onSignOut={signOut} />;
+  };
+
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage onSession={handleSession} onLocalDirectAccess={() => setLocalDirectAccess(true)} />} />
+      <Route path="/register" element={<RegisterPage onSession={handleSession} onVerificationSent={setVerificationEmail} />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/waiting-approval" element={<WaitingApprovalPage email={verificationEmail || 'your email'} />} />
+      <Route path="/" element={authenticatedView()} />
+      <Route path="*" element={<Navigate to={session ? '/' : '/login'} replace />} />
+    </Routes>
   );
-
-  const loadProfile = useCallback(async (userId) => {
-    if (!userId) {
-      setProfile(null);
-      return;
-    }
-
-    setProfileLoading(true);
-    setProfileError('');
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    setProfileLoading(false);
-
-    if (error) {
-      setProfileError(error.message);
-      return;
-    }
-
-    setProfile(data);
-  }, []);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session || null);
-      if (data.session?.user?.id) loadProfile(data.session.user.id);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setPasswordRecovery(true);
-      }
-
-      setSession(nextSession || null);
-
-      if (nextSession?.user?.id && event !== 'PASSWORD_RECOVERY') {
-        setTimeout(() => loadProfile(nextSession.user.id), 0);
-      } else if (!nextSession) {
-        setProfile(null);
-      }
-    });
-
-    return () => listener.subscription.unsubscribe();
-  }, [loadProfile]);
-
-  async function signOut() {
-    localStorage.removeItem('businessplan_local_direct_access');
-    setLocalDirectAccess(false);
-    await supabase.auth.signOut();
-    setSession(null);
-    setProfile(null);
-  }
-
-  const expired = useMemo(() => {
-    if (!profile?.subscription_end) return false;
-    return new Date(profile.subscription_end).getTime() < Date.now();
-  }, [profile]);
-
-  if (localDirectAccess) {
-    const localAdminProfile = {
-      id: 'local-admin',
-      email: 'ramazanesen23@gmail.com',
-      full_name: 'Ramazan Esen',
-      role: 'admin',
-      approval_status: 'approved',
-      subscription_plan: 'Lifetime',
-      selected_workspace: null
-    };
-
-    return (
-      <AdminDashboard
-        profile={localAdminProfile}
-        onSignOut={signOut}
-      />
-    );
-  }
-
-  if (passwordRecovery) {
-    return (
-      <ResetPasswordScreen
-        onDone={async () => {
-          setPasswordRecovery(false);
-          await supabase.auth.signOut();
-          setSession(null);
-          setProfile(null);
-        }}
-      />
-    );
-  }
-
-  if (session === undefined || (session && profileLoading && !profile)) {
-    return (
-      <Shell>
-        <div className="auth-center"><div className="auth-loader">Loading Business Plan...</div></div>
-      </Shell>
-    );
-  }
-
-  if (!session) {
-    return (
-      <LoginRegister
-        onSession={setSession}
-        onLocalDirectAccess={() => setLocalDirectAccess(true)}
-      />
-    );
-  }
-
-  if (profileError) {
-    return (
-      <FullScreenMessage
-        title="Profile could not be loaded"
-        text={profileError}
-        action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Try Again</button>}
-        secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
-      />
-    );
-  }
-
-  if (!profile) {
-    return (
-      <FullScreenMessage
-        title="Preparing your account"
-        text="Your profile record is not ready yet. Try again in a moment."
-        action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Refresh</button>}
-        secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
-      />
-    );
-  }
-
-  if (profile.role === 'admin') {
-    return <AdminDashboard profile={profile} onSignOut={signOut} />;
-  }
-
-  if (profile.approval_status === 'pending') {
-    return (
-      <FullScreenMessage
-        title="Waiting for administrator approval"
-        text="Your email is verified. Your account is now waiting for an administrator to assign access and a subscription."
-        action={<button className="auth-primary" onClick={() => loadProfile(session.user.id)}>Check Again</button>}
-        secondaryAction={<button className="auth-link-button" onClick={signOut}>Sign Out</button>}
-      />
-    );
-  }
-
-  if (profile.approval_status === 'rejected' || profile.approval_status === 'suspended') {
-    return (
-      <FullScreenMessage
-        title={profile.approval_status === 'suspended' ? 'Account suspended' : 'Account not approved'}
-        text="Contact the system administrator for more information."
-        action={<button className="auth-primary" onClick={signOut}>Return to Sign In</button>}
-      />
-    );
-  }
-
-  if (expired) {
-    return (
-      <FullScreenMessage
-        title="Subscription expired"
-        text={`Your access ended on ${new Date(profile.subscription_end).toLocaleDateString('en-GB')}. Contact the administrator to renew it.`}
-        action={<button className="auth-primary" onClick={signOut}>Sign Out</button>}
-      />
-    );
-  }
-
-  if (!profile.selected_workspace || !profile.onboarding_completed) {
-    return <WorkspaceSelection profile={profile} onSelected={setProfile} />;
-  }
-
-  if (profile.selected_workspace === 'teacher') {
-    return <TeacherWorkspace profile={profile} onSignOut={signOut} />;
-  }
-
-  return <PhotographerWorkspace onSignOut={signOut} />;
 }
 
 const styles = `
