@@ -451,7 +451,7 @@ export default function AuthPortal() {
     }
 
     if (profile.role === 'admin') {
-      return <AdminDashboard profile={profile} onSignOut={handleSignOut} />;
+      return <Navigate to="/admin/users" replace />;
     }
 
     if (profile.approval_status === 'pending') {

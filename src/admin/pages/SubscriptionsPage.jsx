@@ -166,7 +166,7 @@ export default function SubscriptionsPage() {
         ))}
       </div>
 
-      {(profileToast || toast) && <UserToast message={profileToast?.message || ''} type={profileToast?.type || 'success'} onClose={() => setToast(null)} />}
+      {profileToast && <UserToast message={profileToast.message || ''} type={profileToast.type || 'success'} onClose={() => setToast(null)} />}
 
       <div className="admin-table-card">
         {loading && <div className="admin-empty-state">Loading subscriptions…</div>}
