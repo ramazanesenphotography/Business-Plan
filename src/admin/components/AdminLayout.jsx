@@ -11,8 +11,12 @@ export default function AdminLayout() {
           <NavLink to="/admin/users" className={({ isActive }) => (isActive ? 'active' : '')}>
             ▦ Users
           </NavLink>
-          <button type="button" disabled>◫ Subscriptions</button>
-          <button type="button" disabled>▥ Workspaces</button>
+          <NavLink to="/admin/subscriptions" className={({ isActive }) => (isActive ? 'active' : '')}>
+            ◫ Subscriptions
+          </NavLink>
+          <NavLink to="/admin/workspaces" className={({ isActive }) => (isActive ? 'active' : '')}>
+            ▥ Workspaces
+          </NavLink>
         </nav>
       </aside>
 

@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import PhotographerApp from '../PhotographerApp';
+import TeacherApp from '../teacher/TeacherApp';
 import AdminLayout from '../admin/components/AdminLayout';
 import AdminUsersPage from '../admin/components/AdminUsersPage';
+import WorkspacesPage from '../admin/pages/WorkspacesPage';
+import SubscriptionsPage from '../admin/pages/SubscriptionsPage';
 import '../admin/admin.css';
 import useAuthSession from './hooks/useAuthSession';
 import LoginPage from './pages/LoginPage';
@@ -105,102 +108,9 @@ function WorkspaceSelection({ profile, onSelected }) {
 }
 
 function TeacherWorkspace({ profile, onSignOut }) {
-  const [tab, setTab] = useState('dashboard');
-  const students = [
-    { name: 'Ada Yılmaz', subject: 'Mathematics', next: 'Monday · 17:00', balance: 'TRY 1,200' },
-    { name: 'Mert Kaya', subject: 'Physics', next: 'Tuesday · 18:30', balance: 'Paid' },
-    { name: 'Elif Demir', subject: 'Mathematics', next: 'Thursday · 16:00', balance: 'TRY 800' }
-  ];
-
   return (
     <Shell>
-      <div className="teacher-app">
-        <aside className="teacher-sidebar">
-          <Brand />
-          <nav>
-            {[
-              ['dashboard', '▦', 'Dashboard'],
-              ['lessons', '▣', 'Lessons'],
-              ['students', '◉', 'Students'],
-              ['reports', '▥', 'Reports']
-            ].map(([key, icon, label]) => (
-              <button className={tab === key ? 'active' : ''} key={key} onClick={() => setTab(key)}>
-                <span>{icon}</span>{label}
-              </button>
-            ))}
-          </nav>
-          <button className="teacher-signout" onClick={onSignOut}>Sign Out</button>
-        </aside>
-
-        <main className="teacher-main">
-          <header className="teacher-header">
-            <div>
-              <small>TEACHER WORKSPACE</small>
-              <h1>{tab[0].toUpperCase() + tab.slice(1)}</h1>
-            </div>
-            <div className="teacher-user">
-              <div>{(profile.full_name || profile.email || 'T')[0].toUpperCase()}</div>
-              <span><b>{profile.full_name || 'Teacher'}</b><small>{profile.email}</small></span>
-            </div>
-          </header>
-
-          {tab === 'dashboard' && (
-            <>
-              <div className="teacher-stats">
-                {[
-                  ['Total Students', '18', '#3B82F6'],
-                  ['Lessons This Month', '42', '#8B5CF6'],
-                  ['Monthly Income', 'TRY 38,400', '#10B981'],
-                  ['Pending Payments', 'TRY 4,600', '#F59E0B'],
-                  ['Homework Waiting', '7', '#EC4899']
-                ].map(([label, value, color]) => (
-                  <div className="teacher-stat" key={label}>
-                    <span>{label}</span><strong style={{ color }}>{value}</strong>
-                  </div>
-                ))}
-              </div>
-              <div className="teacher-grid">
-                <section className="teacher-panel">
-                  <h2>Upcoming Lessons</h2>
-                  {students.map((student) => (
-                    <div className="teacher-row" key={student.name}>
-                      <div className="teacher-avatar">{student.name[0]}</div>
-                      <div><b>{student.name}</b><span>{student.subject}</span></div>
-                      <strong>{student.next}</strong>
-                    </div>
-                  ))}
-                </section>
-                <section className="teacher-panel">
-                  <h2>Quick Actions</h2>
-                  <button className="teacher-action">＋ New Lesson</button>
-                  <button className="teacher-action">＋ Add Student</button>
-                  <button className="teacher-action">✓ Record Payment</button>
-                </section>
-              </div>
-            </>
-          )}
-
-          {tab === 'students' && (
-            <section className="teacher-panel">
-              <h2>Students</h2>
-              {students.map((student) => (
-                <div className="teacher-row" key={student.name}>
-                  <div className="teacher-avatar">{student.name[0]}</div>
-                  <div><b>{student.name}</b><span>{student.subject}</span></div>
-                  <strong>{student.balance}</strong>
-                </div>
-              ))}
-            </section>
-          )}
-
-          {tab !== 'dashboard' && tab !== 'students' && (
-            <section className="teacher-panel teacher-placeholder">
-              <h2>{tab[0].toUpperCase() + tab.slice(1)}</h2>
-              <p>This is the first Teacher Workspace prototype. We will build this section next.</p>
-            </section>
-          )}
-        </main>
-      </div>
+      <TeacherApp profile={profile} onSignOut={onSignOut} />
     </Shell>
   );
 }
@@ -594,6 +504,8 @@ export default function AuthPortal() {
       <Route path="/waiting-approval" element={<WaitingApprovalPage email={verificationEmail || 'your email'} />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route path="users" element={<AdminUsersPage />} />
+        <Route path="subscriptions" element={<SubscriptionsPage />} />
+        <Route path="workspaces" element={<WorkspacesPage />} />
         <Route index element={<Navigate to="/admin/users" replace />} />
       </Route>
       <Route path="/" element={authenticatedView()} />
