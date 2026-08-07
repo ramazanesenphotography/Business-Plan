@@ -1,3 +1,5 @@
+import UserActionButtons from './UserActionButtons';
+
 function formatDate(value) {
   if (!value) return '—';
   try {
@@ -16,7 +18,7 @@ function formatDateTime(value) {
   }
 }
 
-export default function UsersTable({ users }) {
+export default function UsersTable({ users, loading, onApprove, onSuspend, onReactivate }) {
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -31,6 +33,7 @@ export default function UsersTable({ users }) {
             <th>Start</th>
             <th>End</th>
             <th>Created</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -49,6 +52,15 @@ export default function UsersTable({ users }) {
               <td>{formatDate(user.subscription_start)}</td>
               <td>{formatDate(user.subscription_end)}</td>
               <td>{formatDateTime(user.created_at)}</td>
+              <td>
+                <UserActionButtons
+                  user={user}
+                  loading={loading}
+                  onApprove={() => onApprove(user)}
+                  onSuspend={() => onSuspend(user)}
+                  onReactivate={() => onReactivate(user)}
+                />
+              </td>
             </tr>
           ))}
         </tbody>

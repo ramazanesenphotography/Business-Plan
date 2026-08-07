@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import useAdminUserActions from '../hooks/useAdminUserActions';
 import { fetchAdminUsers } from '../services/adminUsersService';
 import UserFilters from './users/UserFilters';
 import UserSearch from './users/UserSearch';
 import UserStatsCards from './users/UserStatsCards';
+import UserToast from './users/UserToast';
 import UsersTable from './users/UsersTable';
 
 export default function AdminUsersPage() {
@@ -12,23 +14,25 @@ export default function AdminUsersPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    async function loadUsers() {
-      setLoading(true);
-      setError('');
-      const { data, error } = await fetchAdminUsers();
-      setLoading(false);
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    const { data, error } = await fetchAdminUsers();
+    setLoading(false);
 
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      setUsers(data || []);
+    if (error) {
+      setError(error.message);
+      return;
     }
 
-    loadUsers();
+    setUsers(data || []);
   }, []);
+
+  const { busyAction, toast, setToast, runAction } = useAdminUserActions({ onRefresh: loadUsers });
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -61,13 +65,25 @@ export default function AdminUsersPage() {
       <UserStatsCards summary={summary} />
       <UserFilters filter={filter} onChange={setFilter} />
 
+      {toast && (
+        <UserToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
+
       <div className="admin-table-card">
         {loading && <div className="admin-empty-state">Loading users…</div>}
         {!loading && error && <div className="admin-empty-state">{error}</div>}
         {!loading && !error && filteredUsers.length === 0 && (
           <div className="admin-empty-state">No users match the current filters.</div>
         )}
-        {!loading && !error && filteredUsers.length > 0 && <UsersTable users={filteredUsers} />}
+        {!loading && !error && filteredUsers.length > 0 && (
+          <UsersTable
+            users={filteredUsers}
+            loading={busyAction}
+            onApprove={(user) => runAction(user, 'approve')}
+            onSuspend={(user) => runAction(user, 'suspend')}
+            onReactivate={(user) => runAction(user, 'reactivate')}
+          />
+        )}
       </div>
     </div>
   );
