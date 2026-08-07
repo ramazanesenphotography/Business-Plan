@@ -502,7 +502,7 @@ export default function AuthPortal() {
       <Route path="/register" element={<RegisterPage onSession={handleSession} onVerificationSent={setVerificationEmail} />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/waiting-approval" element={<WaitingApprovalPage email={verificationEmail || 'your email'} />} />
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route path="/admin" element={<AdminLayout onSignOut={handleSignOut} />}>
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="subscriptions" element={<SubscriptionsPage />} />
         <Route path="workspaces" element={<WorkspacesPage />} />

@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import Brand from '../../auth/shared/Brand';
 
-export default function AdminLayout() {
+export default function AdminLayout({ onSignOut }) {
   return (
     <div className="admin-app">
       <aside className="admin-sidebar">
@@ -18,6 +18,9 @@ export default function AdminLayout() {
             ▥ Workspaces
           </NavLink>
         </nav>
+        <button type="button" className="teacher-signout" onClick={onSignOut}>
+          Sign Out
+        </button>
       </aside>
 
       <main className="admin-main">
