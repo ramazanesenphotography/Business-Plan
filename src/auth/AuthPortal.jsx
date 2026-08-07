@@ -276,10 +276,10 @@ function AdminDashboard({ profile, onSignOut }) {
   );
 }
 
-function PhotographerWorkspace({ onSignOut }) {
+function PhotographerWorkspace({ onSignOut, profile }) {
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
-      <PhotographerApp />
+      <PhotographerApp profile={profile} />
       <button className="floating-signout" onClick={onSignOut}>Sign Out</button>
       <style>{styles}</style>
     </div>
@@ -373,7 +373,6 @@ export default function AuthPortal() {
     passwordRecovery,
     loadProfile,
     signOut,
-    expired,
     setProfile,
     setSession
   } = useAuthSession();
@@ -475,16 +474,6 @@ export default function AuthPortal() {
       );
     }
 
-    if (expired) {
-      return (
-        <FullScreenMessage
-          title="Subscription expired"
-          text={`Your access ended on ${new Date(profile.subscription_end).toLocaleDateString('en-GB')}. Contact the administrator to renew it.`}
-          action={<button className="auth-primary" onClick={handleSignOut}>Sign Out</button>}
-        />
-      );
-    }
-
     if (!profile.selected_workspace || !profile.onboarding_completed) {
       return <WorkspaceSelection profile={profile} onSelected={setProfile} />;
     }
@@ -493,7 +482,7 @@ export default function AuthPortal() {
       return <TeacherWorkspace profile={profile} onSignOut={handleSignOut} />;
     }
 
-    return <PhotographerWorkspace onSignOut={handleSignOut} />;
+    return <PhotographerWorkspace onSignOut={handleSignOut} profile={profile} />;
   };
 
   return (

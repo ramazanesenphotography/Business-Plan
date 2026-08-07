@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import SubscriptionWarningBanner from '../components/SubscriptionWarningBanner';
+import { getSubscriptionStatus } from '../services/subscriptionService';
 
 const emptyStudent = {
   name: '',
@@ -40,6 +42,10 @@ export default function TeacherApp({ profile, onSignOut }) {
   const [editingLessonId, setEditingLessonId] = useState(null);
   const [toast, setToast] = useState('');
   const [userId, setUserId] = useState(null);
+  const subscriptionStatus = useMemo(() => getSubscriptionStatus(profile || {}), [profile]);
+  const isReadOnly = !subscriptionStatus.isActive;
+  const canCreateRecords = subscriptionStatus.canCreate;
+  const canModifyRecords = subscriptionStatus.canModify;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -81,6 +87,10 @@ export default function TeacherApp({ profile, onSignOut }) {
   async function saveStudent(event) {
     event.preventDefault();
     if (!userId) return;
+    if (editingStudentId ? !canModifyRecords : !canCreateRecords) {
+      setToast(editingStudentId ? 'Your subscription is read-only right now.' : 'Your subscription is read-only right now.');
+      return;
+    }
 
     const payload = {
       teacher_user_id: userId,
@@ -117,6 +127,10 @@ export default function TeacherApp({ profile, onSignOut }) {
   async function saveLesson(event) {
     event.preventDefault();
     if (!userId) return;
+    if (editingLessonId ? !canModifyRecords : !canCreateRecords) {
+      setToast(editingLessonId ? 'Your subscription is read-only right now.' : 'Your subscription is read-only right now.');
+      return;
+    }
 
     const payload = {
       teacher_user_id: userId,
@@ -153,7 +167,7 @@ export default function TeacherApp({ profile, onSignOut }) {
   }
 
   async function markAttendance(studentId, status) {
-    if (!userId) return;
+    if (!userId || !canCreateRecords) return;
     const { error } = await supabase.from('attendance').insert([{ teacher_user_id: userId, student_id: studentId, status, created_at: new Date().toISOString() }]);
     if (!error) {
       setToast(`Attendance marked as ${status}.`);
@@ -162,6 +176,7 @@ export default function TeacherApp({ profile, onSignOut }) {
   }
 
   function startEditStudent(student) {
+    if (!canModifyRecords) return;
     setEditingStudentId(student.id);
     setStudentForm({
       name: student.name || '',
@@ -174,6 +189,7 @@ export default function TeacherApp({ profile, onSignOut }) {
   }
 
   function startEditLesson(lesson) {
+    if (!canModifyRecords) return;
     setEditingLessonId(lesson.id);
     setLessonForm({
       student_id: lesson.student_id || '',
@@ -227,6 +243,8 @@ export default function TeacherApp({ profile, onSignOut }) {
 
         {toast && <div className="admin-toast success" onClick={() => setToast('')}>{toast}</div>}
 
+        <SubscriptionWarningBanner isExpired={subscriptionStatus.isExpired} plan={subscriptionStatus.plan} />
+
         {tab === 'dashboard' && (
           <>
             <div className="teacher-stats">
@@ -257,9 +275,9 @@ export default function TeacherApp({ profile, onSignOut }) {
               </section>
               <section className="teacher-panel">
                 <h2>Quick actions</h2>
-                <button className="teacher-action" onClick={() => setTab('lessons')}>＋ New lesson</button>
-                <button className="teacher-action" onClick={() => setTab('students')}>＋ Add student</button>
-                <button className="teacher-action" onClick={() => setTab('attendance')}>✓ Mark attendance</button>
+                <button className="teacher-action" onClick={() => setTab('lessons')} disabled={!canCreateRecords}>＋ New lesson</button>
+                <button className="teacher-action" onClick={() => setTab('students')} disabled={!canCreateRecords}>＋ Add student</button>
+                <button className="teacher-action" onClick={() => setTab('attendance')} disabled={!canCreateRecords}>✓ Mark attendance</button>
               </section>
             </div>
           </>
@@ -270,15 +288,17 @@ export default function TeacherApp({ profile, onSignOut }) {
             <section className="teacher-panel">
               <h2>{editingStudentId ? 'Edit student' : 'Create student'}</h2>
               <form className="admin-workspace-form" onSubmit={saveStudent}>
+                <fieldset disabled={editingStudentId ? !canModifyRecords : !canCreateRecords} style={{ border: 0, padding: 0, margin: 0 }}>
                 <label>Name<input value={studentForm.name} onChange={(event) => setStudentForm((current) => ({ ...current, name: event.target.value }))} required /></label>
                 <label>Email<input value={studentForm.email} onChange={(event) => setStudentForm((current) => ({ ...current, email: event.target.value }))} /></label>
                 <label>Grade<input value={studentForm.grade_level} onChange={(event) => setStudentForm((current) => ({ ...current, grade_level: event.target.value }))} /></label>
                 <label>Phone<input value={studentForm.phone} onChange={(event) => setStudentForm((current) => ({ ...current, phone: event.target.value }))} /></label>
                 <label>Notes<textarea value={studentForm.notes} onChange={(event) => setStudentForm((current) => ({ ...current, notes: event.target.value }))} rows={3} /></label>
                 <div className="admin-drawer-actions">
-                  <button type="submit" className="admin-action-btn approve">{editingStudentId ? 'Save student' : 'Create student'}</button>
+                  <button type="submit" className="admin-action-btn approve" disabled={editingStudentId ? !canModifyRecords : !canCreateRecords}>{editingStudentId ? 'Save student' : 'Create student'}</button>
                   {editingStudentId && <button type="button" className="admin-action-btn" onClick={() => { setEditingStudentId(null); setStudentForm(emptyStudent); }}>Cancel</button>}
                 </div>
+                </fieldset>
               </form>
             </section>
             <section className="teacher-panel">
@@ -288,8 +308,8 @@ export default function TeacherApp({ profile, onSignOut }) {
                   <div className="teacher-avatar">{(student.name || 'S')[0].toUpperCase()}</div>
                   <div><b>{student.name}</b><span>{student.email || student.grade_level || 'Student'}</span></div>
                   <div className="admin-actions-row">
-                    <button type="button" className="admin-action-btn" onClick={() => startEditStudent(student)}>Edit</button>
-                    <button type="button" className="admin-action-btn" onClick={() => markAttendance(student.id, 'present')}>Present</button>
+                    <button type="button" className="admin-action-btn" onClick={() => startEditStudent(student)} disabled={!canModifyRecords}>Edit</button>
+                    <button type="button" className="admin-action-btn" onClick={() => markAttendance(student.id, 'present')} disabled={!canCreateRecords}>Present</button>
                   </div>
                 </div>
               ))}
@@ -302,6 +322,7 @@ export default function TeacherApp({ profile, onSignOut }) {
             <section className="teacher-panel">
               <h2>{editingLessonId ? 'Edit lesson' : 'Create lesson'}</h2>
               <form className="admin-workspace-form" onSubmit={saveLesson}>
+                <fieldset disabled={editingLessonId ? !canModifyRecords : !canCreateRecords} style={{ border: 0, padding: 0, margin: 0 }}>
                 <label>Student<select value={lessonForm.student_id} onChange={(event) => setLessonForm((current) => ({ ...current, student_id: event.target.value }))}>
                   <option value="">Select student</option>
                   {students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
@@ -317,9 +338,10 @@ export default function TeacherApp({ profile, onSignOut }) {
                 </select></label>
                 <label>Notes<textarea value={lessonForm.notes} onChange={(event) => setLessonForm((current) => ({ ...current, notes: event.target.value }))} rows={3} /></label>
                 <div className="admin-drawer-actions">
-                  <button type="submit" className="admin-action-btn approve">{editingLessonId ? 'Save lesson' : 'Create lesson'}</button>
+                  <button type="submit" className="admin-action-btn approve" disabled={editingLessonId ? !canModifyRecords : !canCreateRecords}>{editingLessonId ? 'Save lesson' : 'Create lesson'}</button>
                   {editingLessonId && <button type="button" className="admin-action-btn" onClick={() => { setEditingLessonId(null); setLessonForm(emptyLesson); }}>Cancel</button>}
                 </div>
+                </fieldset>
               </form>
             </section>
             <section className="teacher-panel">
@@ -329,8 +351,8 @@ export default function TeacherApp({ profile, onSignOut }) {
                   <div className="teacher-avatar">L</div>
                   <div><b>{lesson.subject}</b><span>{formatDate(lesson.lesson_date)} · {lesson.start_time || '—'}</span></div>
                   <div className="admin-actions-row">
-                    <button type="button" className="admin-action-btn" onClick={() => startEditLesson(lesson)}>Edit</button>
-                    <button type="button" className="admin-action-btn" onClick={() => markAttendance(lesson.student_id, 'present')}>Attend</button>
+                    <button type="button" className="admin-action-btn" onClick={() => startEditLesson(lesson)} disabled={!canModifyRecords}>Edit</button>
+                    <button type="button" className="admin-action-btn" onClick={() => markAttendance(lesson.student_id, 'present')} disabled={!canCreateRecords}>Attend</button>
                   </div>
                 </div>
               ))}

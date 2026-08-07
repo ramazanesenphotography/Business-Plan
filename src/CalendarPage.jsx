@@ -238,7 +238,8 @@ export default function CalendarPage({
   clients = [],
   refresh = () => {},
   theme,
-  supabase
+  supabase,
+  readOnly = false
 }) {
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterCategory, setFilterCategory] = useState('All');
@@ -251,6 +252,7 @@ export default function CalendarPage({
   const [savingKey, setSavingKey] = useState('');
   const [paymentEditor, setPaymentEditor] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const isReadOnly = Boolean(readOnly);
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -353,7 +355,7 @@ export default function CalendarPage({
   ]);
 
   async function updateShoot(shootId, patch, key) {
-    if (!supabase || !shootId) return;
+    if (!supabase || !shootId || isReadOnly) return;
 
     setSavingKey(`${shootId}-${key}`);
 
@@ -466,11 +468,13 @@ export default function CalendarPage({
   }
 
   function openNewShootForm() {
+    if (isReadOnly) return;
     resetShootForm();
     setIsCreateOpen(true);
   }
 
   function openEditShoot(shoot) {
+    if (isReadOnly) return;
     const total = getShootTotal(shoot);
     const paid = getPaidAmount(shoot);
 
@@ -500,6 +504,7 @@ export default function CalendarPage({
 
   async function handleCreateShoot(event) {
     event.preventDefault();
+    if (isReadOnly) return;
 
     const total_expense = formData.expenses.reduce(
       (sum, item) => sum + Number(item.amount || 0),
@@ -560,7 +565,7 @@ export default function CalendarPage({
   }
 
   async function handleDeleteShoot() {
-    if (!selectedShoot?.id) return;
+    if (!selectedShoot?.id || isReadOnly) return;
 
     const approved = window.confirm(
       `Delete "${selectedShoot.title || 'this shoot'}"?`
@@ -1511,6 +1516,7 @@ export default function CalendarPage({
         <button
           type="button"
           onClick={openNewShootForm}
+          disabled={isReadOnly}
           style={{
             marginLeft: 'auto',
             background: '#3B82F6',
@@ -1600,7 +1606,7 @@ export default function CalendarPage({
                   <select
                     className="calendar-status-select"
                     value={status}
-                    disabled={isStatusSaving}
+                    disabled={isReadOnly || isStatusSaving}
                     onClick={stop}
                     onChange={(event) =>
                       handleStatusChange(
@@ -1633,7 +1639,7 @@ export default function CalendarPage({
                   <select
                     className="calendar-status-select"
                     value={paymentStatus}
-                    disabled={isPaymentSaving}
+                    disabled={isReadOnly || isPaymentSaving}
                     onClick={stop}
                     onChange={(event) =>
                       handlePaymentStatusChange(
@@ -1667,6 +1673,7 @@ export default function CalendarPage({
                 <button
                   type="button"
                   className="calendar-final-edit"
+                  disabled={isReadOnly}
                   onClick={(event) => {
                     stop(event);
                     openEditShoot(shoot);
@@ -1777,6 +1784,7 @@ export default function CalendarPage({
                 <select
                   className="calendar-status-select"
                   value={selectedShoot.status || 'Planned'}
+                  disabled={isReadOnly}
                   onChange={(event) =>
                     handleStatusChange(
                       selectedShoot.id,
@@ -1820,6 +1828,7 @@ export default function CalendarPage({
                   value={
                     selectedShoot.payment_status || 'Unpaid'
                   }
+                  disabled={isReadOnly}
                   onChange={(event) =>
                     handlePaymentStatusChange(
                       selectedShoot,
@@ -1928,6 +1937,7 @@ export default function CalendarPage({
                   type="button"
                   className="calendar-action-button"
                   onClick={() => openEditShoot(selectedShoot)}
+                  disabled={isReadOnly}
                   style={{
                     background: theme.bg,
                     border: `1px solid ${theme.border}`,
@@ -1942,6 +1952,7 @@ export default function CalendarPage({
                   type="button"
                   className="calendar-action-button"
                   onClick={handleDeleteShoot}
+                  disabled={isReadOnly}
                   style={{
                     background: 'rgba(248,113,113,.1)',
                     border: '1px solid rgba(248,113,113,.3)',
@@ -2461,6 +2472,7 @@ export default function CalendarPage({
 
                 <button
                   type="submit"
+                  disabled={isReadOnly}
                   style={{
                     background: '#3B82F6',
                     color: '#fff',

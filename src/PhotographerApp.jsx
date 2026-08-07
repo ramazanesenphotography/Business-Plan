@@ -1,5 +1,7 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { supabase } from './supabaseClient';
+import SubscriptionWarningBanner from './components/SubscriptionWarningBanner';
+import { getSubscriptionStatus } from './services/subscriptionService';
 
 function formatDateTR(dateString) {
   if (!dateString) return { day: '----', month: '---', year: '----' };
@@ -105,7 +107,7 @@ function CameraLogo({ size = 46 }) {
   );
 }
 
-export default function App() {
+export default function App({ profile: authProfile = null }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isTabPending, startTabTransition] = useTransition();
   const [shoots, setShoots] = useState([]);
@@ -164,6 +166,9 @@ export default function App() {
   const changeTab = useCallback((tab) => {
     startTabTransition(() => setActiveTab(tab));
   }, []);
+
+  const subscriptionStatus = useMemo(() => getSubscriptionStatus(authProfile || {}), [authProfile]);
+  const isReadOnly = !subscriptionStatus.isActive;
 
   const theme = useMemo(() => ({
     bg: isDarkMode ? '#070B14' : '#F8FAFC',
@@ -497,6 +502,7 @@ export default function App() {
 
         {/* Main content */}
         <main className="shootflow-main" style={{ flex: 1, padding: '36px 40px', maxWidth: '1600px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+          <SubscriptionWarningBanner isExpired={subscriptionStatus.isExpired} plan={subscriptionStatus.plan} />
           <Suspense
             fallback={
               <div style={{ textAlign: 'center', marginTop: '64px', color: theme.textMuted }}>
@@ -529,12 +535,12 @@ export default function App() {
               {activeTab === 'calendar' && (
                 CALENDAR_DEMO_MODE
                   ? <CalendarTestPage theme={theme} />
-                  : <CalendarPage clients={clients} refresh={() => fetchData({ silent: true })} shoots={shoots} theme={theme} supabase={supabase} />
+                  : <CalendarPage clients={clients} refresh={() => fetchData({ silent: true })} shoots={shoots} theme={theme} supabase={supabase} readOnly={isReadOnly} />
               )}
               {activeTab === 'clients' && (
                 CLIENTS_DEMO_MODE
                   ? <ClientsTestPage theme={theme} />
-                  : <ClientsPage clients={clients} refresh={() => fetchData({ silent: true })} shoots={shoots} theme={theme} supabase={supabase} />
+                  : <ClientsPage clients={clients} refresh={() => fetchData({ silent: true })} shoots={shoots} theme={theme} supabase={supabase} readOnly={isReadOnly} />
               )}
               {activeTab === 'reports' && (
                 REPORTS_DEMO_MODE

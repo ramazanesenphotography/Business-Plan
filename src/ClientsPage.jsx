@@ -242,7 +242,8 @@ export default function ClientsPage({
   shoots = [],
   refresh = () => {},
   theme,
-  supabase
+  supabase,
+  readOnly = false
 }) {
   const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
   const [searchTerm, setSearchTerm] = useState('');
@@ -254,6 +255,7 @@ export default function ClientsPage({
   const [clientForm, setClientForm] = useState(CLIENT_EMPTY);
   const [shootForm, setShootForm] = useState(SHOOT_EMPTY);
   const [saving, setSaving] = useState(false);
+  const isReadOnly = Boolean(readOnly);
 
   useEffect(() => {
     if (!clients.length) {
@@ -342,12 +344,13 @@ export default function ClientsPage({
   );
 
   function openNewClient() {
+    if (isReadOnly) return;
     setClientForm(CLIENT_EMPTY);
     setClientModalMode('create');
   }
 
   function openEditClient() {
-    if (!selectedClient) return;
+    if (!selectedClient || isReadOnly) return;
 
     setClientForm({
       name: selectedClient.name || '',
@@ -366,7 +369,7 @@ export default function ClientsPage({
   }
 
   function openNewShoot() {
-    if (!selectedClient) return;
+    if (!selectedClient || isReadOnly) return;
 
     setEditingShootId(null);
     setShootForm(SHOOT_EMPTY);
@@ -374,7 +377,7 @@ export default function ClientsPage({
   }
 
   function openEditHistoryShoot(shoot) {
-    if (!shoot) return;
+    if (!shoot || isReadOnly) return;
 
     setEditingShootId(shoot.id);
     setShootForm({
@@ -445,7 +448,7 @@ export default function ClientsPage({
 
   async function saveClient(event) {
     event.preventDefault();
-    if (!supabase) return;
+    if (!supabase || isReadOnly) return;
 
     setSaving(true);
 
@@ -468,7 +471,7 @@ export default function ClientsPage({
   }
 
   async function deleteClient() {
-    if (!selectedClient || !supabase) return;
+    if (!selectedClient || !supabase || isReadOnly) return;
 
     const approved = window.confirm(
       `Delete "${selectedClient.name}"? Related shoots may also be deleted depending on your database settings.`
@@ -492,7 +495,7 @@ export default function ClientsPage({
 
   async function saveShoot(event) {
     event.preventDefault();
-    if (!selectedClient || !supabase) return;
+    if (!selectedClient || !supabase || isReadOnly) return;
 
     const grossIncome = Number(shootForm.gross_income || 0);
     const paidAmount = Math.max(
@@ -1379,6 +1382,7 @@ export default function ClientsPage({
             className="clients-add-button"
             onClick={openNewClient}
             aria-label="Add client"
+            disabled={isReadOnly}
           >
             <Icon name="plus" size={18} />
           </button>
@@ -1441,6 +1445,7 @@ export default function ClientsPage({
                   type="button"
                   className="client-action"
                   onClick={openEditClient}
+                  disabled={isReadOnly}
                 >
                   <Icon name="edit" size={14} />
                   Edit
@@ -1470,6 +1475,7 @@ export default function ClientsPage({
                   type="button"
                   className="client-action primary"
                   onClick={openNewShoot}
+                  disabled={isReadOnly}
                 >
                   <Icon name="plus" size={14} />
                   New Shoot
@@ -1479,6 +1485,7 @@ export default function ClientsPage({
                   type="button"
                   className="client-action danger"
                   onClick={deleteClient}
+                  disabled={isReadOnly}
                 >
                   <Icon name="trash" size={14} />
                   Delete
@@ -1906,6 +1913,7 @@ export default function ClientsPage({
                   type="button"
                   className="client-action primary"
                   onClick={() => openEditHistoryShoot(selectedHistoryShoot)}
+                  disabled={isReadOnly}
                 >
                   <Icon name="edit" size={14} />
                   Edit Job
