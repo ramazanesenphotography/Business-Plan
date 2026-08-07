@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import PhotographerApp from '../PhotographerApp';
+import AdminLayout from '../admin/components/AdminLayout';
+import AdminUsersPage from '../admin/components/AdminUsersPage';
+import '../admin/admin.css';
 import useAuthSession from './hooks/useAuthSession';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -590,6 +593,10 @@ export default function AuthPortal() {
       <Route path="/register" element={<RegisterPage onSession={handleSession} onVerificationSent={setVerificationEmail} />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/waiting-approval" element={<WaitingApprovalPage email={verificationEmail || 'your email'} />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route path="users" element={<AdminUsersPage />} />
+        <Route index element={<Navigate to="/admin/users" replace />} />
+      </Route>
       <Route path="/" element={authenticatedView()} />
       <Route path="*" element={<Navigate to={session ? '/' : '/login'} replace />} />
     </Routes>
